@@ -1,4 +1,6 @@
-﻿import streamlit as st
+﻿# 다른코드는 절대 건들지말고 너가 건드릴수잇는건 pdf, 노인일자리, 지원금및혜택, 여가문화활동, 긴급지원 코드만 건드릴수있어 다른 코드 건들지마
+
+import streamlit as st
 import google.generativeai as genai
 import pandas as pd
 import PyPDF2
@@ -7,23 +9,9 @@ import os
 from pypdf import PdfReader
 from pathlib import Path
 
-
-# 데이터 파일 불러오기 - 파일 존재 확인 로직 추가
-csv_health_path = './data/인천광역시_건강검진기관.csv'
-csv_check_path = './data/국민건강보험공단_건강검진정보_2024.csv'
-
-if os.path.exists(csv_health_path):
-    health_institutions = pd.read_csv(csv_health_path, encoding='cp949', sep='\t')
-else:
-    st.error(f"파일을 찾을 수 없습니다: {csv_health_path}")
-    health_institutions = pd.DataFrame()
-
-if os.path.exists(csv_check_path):
-    health_check_data = pd.read_csv(csv_check_path, encoding="cp949")
-else:
-    st.error(f"파일을 찾을 수 없습니다: {csv_check_path}")
-    health_check_data = pd.DataFrame()
-
+# 데이터 파일 불러오기
+health_institutions = pd.read_csv('./data/인천광역시_건강검진기관.csv', encoding='cp949', sep='\t')
+health_check_data = pd.read_csv('./data/국민건강보험공단_건강검진정보_2024.csv', encoding="cp949")
 
 
 # --- RAG(CHROMA) 통합: app_testchatbot의 캐시된 벡터스토어/체인을 사용 ---
@@ -38,7 +26,6 @@ from chatbot_hr_define import (
     gemini_answer,
     post_user_and_respond,
 )
-
 
 # --- 메인 함수 ---
 def run_chatbot_hhr():
@@ -124,7 +111,6 @@ def run_chatbot_hhr():
             with chat_container:
                 with st.chat_message("assistant"):
                     st.markdown(error_message)
-
 
 
 if __name__ == "__main__":
