@@ -16,7 +16,7 @@ health_institutions = pd.read_csv('./data/인천광역시_건강검진기관.csv
 BASE_DIR = Path(__file__).resolve().parent
 data_path = BASE_DIR / "data" / "국민건강보험공단_건강검진정보_2024.csv"
 
-health_check_data = pd.read_csv(data_path, encoding="cp949")
+health_check_data = pd.read_csv(data_path, encoding="utf-8")
 
 
 
