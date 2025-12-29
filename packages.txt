@@ -1,2 +1,5 @@
 libspatialindex-dev
-gdal-bin
+libgdal-dev
+poppler-utils
+tesseract-ocr
+tesseract-ocr-kor
