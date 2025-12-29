@@ -8,7 +8,7 @@ LLM_MODEL = "gemini-2.5-flash"
 MESSAGE_KEY = "messages_mj"
 
 def _get_client():
-    api_key = st.secrets.get("GOOGLE_API_KEY")
+    api_key = st.secrets.get("GEMINI_API_KEY")
     if not api_key:
         return None
     genai.configure(api_key=api_key)
