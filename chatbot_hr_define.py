@@ -131,33 +131,63 @@ def add_source_to_answer(result):
 
 @st.cache_resource
 def load_vectorstore():
-    """Streamlit Cloud에서 RAG 100% 작동"""
+    """
+    Streamlit 앱 실행 시 단 한 번만 ChromaDB를 로드합니다.
+    (원본 동작을 그대로 유지합니다.)
+    """
     embeddings = GoogleGenerativeAIEmbeddings(model=EMBED_MODEL)
-    
-    # Chroma 클라이언트 생성 (파일 권한 문제 해결)
-    try:
-        client = chromadb.PersistentClient(path=CHROMA_DIR)
-    except:
-        # 디렉토리 생성
-        os.makedirs(CHROMA_DIR, exist_ok=True)
-        client = chromadb.PersistentClient(path=CHROMA_DIR)
-    
-    # 컬렉션 자동 생성/로드
-    try:
-        collection = client.get_collection(name="langchain")
-        st.success(f"✅ RAG DB 로드: {collection.count()} 문서")
-    except:
-        # 빈 컬렉션 생성
-        collection = client.create_collection(name="langchain")
-        st.warning("⚠️ 빈 RAG DB 생성 - PDF 재처리 필요")
-    
-    vectordb = Chroma(
-        client=client,
-        collection_name="langchain",
-        embedding_function=embeddings,
-    )
-    return vectordb
+    db_path = Path(CHROMA_DIR)
 
+    if not db_path.exists() or not (db_path / "chroma.sqlite3").exists():
+        st.error(f"'{CHROMA_DIR}' 폴더 또는 'chroma.sqlite3' 파일을 찾을 수 없습니다.")
+        st.error("Colab에서 'chroma_db'를 빌드한 후, 압축 해제하여 VScode 프로젝트 폴더에 올바르게 복사했는지 확인하세요.")
+        st.stop()
+
+    try:
+        # ChromaDB 클라이언트에 직접 연결하여 진단 시작
+        client = chromadb.PersistentClient(path=CHROMA_DIR)
+        
+        # 1. 컬렉션 목록 확인
+        collections = client.list_collections()
+        if not collections:
+            st.error(f"'{CHROMA_DIR}' DB는 로드되었으나, 안에 컬렉션이 없습니다.")
+            st.error("Colab DB 빌드 중 오류가 있었을 수 있습니다. Colab에서 DB를 다시 빌드하세요.")
+            st.stop()
+
+        # 2. 'langchain' (기본값) 컬렉션 가져오기
+        try:
+            collection = client.get_collection(name="langchain")
+        except Exception as e:
+            st.error(f"DB에서 'langchain' 컬렉션을 찾는 중 오류: {e}")
+            st.error(f"사용 가능한 컬렉션: {[c.name for c in collections]}")
+            st.error("Colab의 chromadb 버전(1.3.0)과 로컬 VScode의 chromadb 버전(1.3.0)이 동일한지 확인하세요.")
+            st.stop()
+
+        # 3. 문서 개수 확인
+        count = collection.count()
+        if count == 0:
+            st.warning(f"'{CHROMA_DIR}' DB는 로드되었으나, 'langchain' 컬렉션 안에 문서가 0개입니다.")
+            st.warning("Colab에서 DB가 정상적으로 빌드되었는지, 'chroma_db' 폴더가 올바르게 복사/압축 해제되었는지 다시 확인하세요.")
+            st.stop()
+        
+        # 터미널(콘솔)에 성공 로그 출력
+        print(f"\n--- [DB 진단 성공] ---")
+        print(f"'{CHROMA_DIR}' DB 로드 성공.")
+        print(f"컬렉션 '{collection.name}'에서 {count}개의 문서를 찾았습니다.")
+        print(f"----------------------\n")
+
+        # 4. LangChain VectorStore 객체로 래핑
+        vectordb = Chroma(
+            client=client,
+            collection_name="langchain",
+            embedding_function=embeddings,
+        )
+        return vectordb
+
+    except Exception as e:
+        st.error(f"DB 문서 개수 확인 중 심각한 오류 발생: {e}")
+        st.error("ChromaDB 파일이 손상되었을 수 있습니다. Colab에서 DB를 다시 빌드하고 VScode의 `chromadb` 버전을 (1.3.0) 통일하세요.")
+        st.stop()
 
 
 @st.cache_resource
